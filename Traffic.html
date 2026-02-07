@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Traffic</title>
+<link rel="stylesheet" type="text/css" href="Css.css">
+<script>
+//On document load
+//Global data
+var data;
+
+document.addEventListener("DOMContentLoaded", function(event) {
+    init();
+});
+
+async function init() {
+    data = await fetchJSONData(); // Wait for fetch operation to complete
+    populateDates(generateDates(),"Date")
+    populateDates(generateDates(),"begDate")
+}
+
+async function fetchJSONData() {
+    try {
+        const response = await fetch("/TMST-04-2020.json");
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const jsonData = await response.json();
+        return jsonData;
+    } catch (error) {
+        console.error("Unable to fetch data:", error);
+        return null; // Return null or handle the error accordingly
+    }
+}
+
+function openTab(evt, tabName) {
+    // Declare all variables
+    var i, tabcontent, tablinks;
+
+    // Get all elements with class="tabcontent" and hide them
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
+    }
+
+    // Get all elements with class="tablinks" and remove the class "active"
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+
+    // Show the current tab, and add an "active" class to the button that opened the tab
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+
+  }
+
+//Generates the Available dates
+function generateDates()
+{
+    console.log(data)
+    let dateArray = []
+    for (let k in data)
+    {
+        dateArray.push(k)
+    }
+    dateArray.sort((a, b) => {
+        return new Date(a) - new Date(b)
+      })
+      return dateArray;
+}
+
+//Populates the dates dropdown with options
+function populateDates(dateArray,dateSelect)
+{
+    let select = document.getElementById(dateSelect);
+    if(select.options.length)
+    {
+        select.innerHTML = "";
+    }
+
+    for(let i = 0; i < dateArray.length; i++) {
+        let opt = dateArray[i];
+        let el = document.createElement("option");
+        el.textContent = opt;
+        el.value = opt;
+        select.appendChild(el);
+    }
+
+    select.selected=""
+
+}
+
+//Generates the Available dates
+function generateEndDates()
+{
+    let dateArray = []
+    let selectedDate = document.getElementById("begDate")
+    let currDate = selectedDate.options[ selectedDate.selectedIndex ].value
+
+    for (let k in data)
+    {
+        //Push dates older than selected Date
+        if((new Date(currDate) - new Date(k)) < 0)
+        {
+            dateArray.push(k)
+        }
+
+    }
+    dateArray.sort((a, b) => {
+        return new Date(a) - new Date(b)
+      })
+      return dateArray;
+}
+
+function populateEndDates()
+{
+    populateDates(generateEndDates(),'endDate')
+    populateSites('Site2');
+}
+
+//Populates the sites dropdown with options
+function populateSites(siteSelector)
+{
+    let sitesArray = generateSites()
+
+    let select = document.getElementById(siteSelector);
+
+    if(select.options.length)
+    {
+        select.innerHTML = "";
+    }
+
+    for(let i = 0; i < sitesArray.length; i++) {
+        let opt = sitesArray[i];
+        let el = document.createElement("option");
+        el.textContent = opt;
+        el.value = opt;
+        select.appendChild(el);
+    }
+
+}
+
+
+function generateSites()
+{
+
+    let sitesArray = []
+    let selectedDate = document.getElementById("Date")
+    let date = selectedDate.options[ selectedDate.selectedIndex ].value
+    let rawSitesValues = data[date]
+
+    for (let k in rawSitesValues)
+    {
+        sitesArray.push(k)
+    }
+        sitesArray.sort()
+      return sitesArray;
+
+}
+
+function addDays (days,date) {
+    var date = new Date(date);
+    date.setDate(date.getDate() + days);
+    return date;
+}
+
+function generateNewAverageGraph()
+{
+    let xValues = []
+
+    let selectedBegDate = document.getElementById("begDate")
+    let selectedEndDate = document.getElementById("endDate")
+    let selectedSite = document.getElementById("Site2")
+
+    let site = selectedSite.options[ selectedSite.selectedIndex ].value
+    let begDate = selectedBegDate.options[ selectedBegDate.selectedIndex ].value
+    let endDate = selectedEndDate.options[ selectedEndDate.selectedIndex ].value
+
+    begDate = new Date(begDate)
+    endDate = new Date(endDate)
+
+    let currDate = begDate;
+
+    let direction1;
+    let direction2;
+
+    let directionalValuesa = []
+    let directionalValuesb = []
+
+
+    while (currDate <= endDate) {
+        currDate = ((currDate.getMonth() > 9) ? (currDate.getMonth() + 1) : ('0'+(currDate.getMonth() + 1))) + '/' + ((currDate.getDate() > 9) ? currDate.getDate() : ('0'+currDate.getDate())) + '/' + currDate.getFullYear()
+        if(currDate in data){xValues.push(currDate);}
+        currDate = addDays(1,currDate);
+    }
+
+    //Define directional values
+    for(q in data[xValues[0]][site])
+    {
+     if(direction1== null){direction1 = q}
+     else{direction2 = q}
+    }
+
+    let j=0;
+    let xValuesDynamicLength = xValues.length
+
+    for(let i = 0;i<xValuesDynamicLength;i++)
+    {
+            console.log(xValues[i])
+            let temp = data[xValues[i]][site]
+
+            //If sites are malformed
+            if(temp === undefined)
+            {
+                xValues.splice(j,1)
+                xValuesDynamicLength--
+                i--
+                j--
+            }
+            else{
+                for(m in temp)
+                {
+                 if(m == direction1)
+                 {
+                     directionalValuesa.push(temp[m]['TOTVOL'])
+                 }
+                 else if(m == direction2)
+                 {
+                     directionalValuesb.push(temp[m]['TOTVOL'])
+                 }
+                }
+            }
+
+            j++
+    }
+
+    console.log(xValues)
+
+    RefreshCanvas("ChartMain2","ChartDiv2")
+
+    new Chart("ChartMain2", {
+        type: "line",
+        data: {
+          labels: xValues,
+          datasets: [{
+            label: direction1,
+            data: directionalValuesa,
+            borderColor: "red",
+            fill: false
+          },{
+            label: direction2,
+            data: directionalValuesb,
+            borderColor: "green",
+            fill: false
+          }]
+        },
+        options: {
+          legend: {display: true},
+          title:{
+            display: true,
+            position: 'top',
+            text: "Traffic for "+getCounty(data[xValues[0]][site][direction1]['COUNTY']) + " site "+site + " from "+ selectedBegDate.options[ selectedBegDate.selectedIndex ].value + " to " + selectedEndDate.options[ selectedEndDate.selectedIndex ].value
+        }
+        },
+      });
+
+
+}
+
+function generateNewGraph()
+{
+    const xValues = ["HR1","HR2","HR3","HR4","HR5","HR6","HR7","HR8","HR9","HR10","HR11","HR12","HR13","HR14","HR15","HR16","HR17","HR18","HR19","HR20","HR21","HR22","HR23","HR24"]
+    let selectedDate = document.getElementById("Date")
+    let selectedSite = document.getElementById("Site")
+    let date = selectedDate.options[ selectedDate.selectedIndex ].value
+    let site = selectedSite.options[ selectedSite.selectedIndex ].value
+
+    let ObjLiteral = data[date][site]
+
+    let directionalObj = []
+
+    let directionalValuesa = []
+    let directionalValuesb = []
+
+    let count = 0
+    for(let k in ObjLiteral)
+    {
+        directionalObj.push(Object.values(ObjLiteral[k]))
+        directionalObj[count].push(k)
+        count++
+    }
+
+    if(directionalObj.length != 2)
+    {
+        alert("Error this site does not have a proper data format, unable to complete your request, please try a different site")
+        return;
+    }
+
+    directionalValuesa = directionalObj[0]
+    directionalValuesb = directionalObj[1]
+
+    RefreshCanvas("ChartMain","ChartDiv")
+
+    new Chart("ChartMain", {
+        type: "line",
+        data: {
+          labels: xValues,
+          datasets: [{
+            label: directionalValuesa[directionalValuesa.length-1],
+            data: directionalValuesa.slice(1,25),
+            borderColor: "red",
+            fill: false
+          },{
+            label: directionalValuesb[directionalValuesb.length-1],
+            data: directionalValuesb.slice(1,25),
+            borderColor: "green",
+            fill: false
+          }]
+        },
+        options: {
+          legend: {display: true},
+          title:{
+            display: true,
+            position: 'top',
+            text: "Traffic for "+getCounty(directionalValuesa[0]) + " site "+site + " on "+ date
+        }
+        },
+      });
+
+}
+
+function getCounty(countyCode)
+{
+    countyDict = {
+        "01":"CHARLOTTE",
+        "02":"CITRUS",
+        "03":"COLLIER",
+        "04":"DESOTO",
+        "05":"GLADES",
+        "06":"HARDEE",
+        "07":"HENDRY",
+        "08":"HERNANDO",
+        "09":"HIGHLANDS",
+        "10":"HILLSBOROUGH",
+        "11":"LAKE",
+        "12":"LEE",
+        "13":"MANATEE",
+        "14":"PASCO",
+        "15":"PINELLAS",
+        "16":"POLK",
+        "17":"SARASOTA",
+        "18":"SUMTER",
+        "26":"ALACHUA",
+        "27":"BAKER",
+        "28":"BRADFORD",
+        "29":"COLUMBIA",
+        "30":"DIXIE",
+        "31":"GILCHRIST",
+        "32":"HAMILTON",
+        "33":"LAFAYETTE",
+        "34":"LEVY",
+        "35":"MADISON",
+        "36":"MARION",
+        "37":"SUWANNEE",
+        "38":"TAYLOR",
+        "39":"UNION",
+        "46":"BAY",
+        "47":"CALHOUN",
+        "48":"ESCAMBIA",
+        "49":"FRANKLIN",
+        "50":"GADSDEN",
+        "51":"GULF",
+        "52":"HOLMES",
+        "53":"JACKSON",
+        "54":"JEFFERSON",
+        "55":"LEON",
+        "56":"LIBERTY",
+        "57":"OKALOOSA",
+        "58":"SANTA ROSA",
+        "59":"WAKULLA",
+        "60":"WALTON",
+        "61":"WASHINGTON",
+        "70":"BREVARD",
+        "71":"CLAY",
+        "72":"DUVAL",
+        "73":"FLAGLER",
+        "74":"NASSAU",
+        "75":"ORANGE",
+        "76":"PUTNAM",
+        "77":"SEMINOLE",
+        "78":"ST. JOHNS",
+        "79":"VOLUSIA",
+        "86":"BROWARD",
+        "87":"MIAMI-DADE",
+        "88":"INDIAN RIVER",
+        "89":"MARTIN",
+        "90":"MONROE",
+        "91":"OKEECHOBEE",
+        "92":"OSCEOLA",
+        "93":"PALM BEACH",
+        "94":"ST. LUCIE",
+        "97":"TURNPIKE",
+        "98":"PRI.BDG.REH.",
+        "99":"DIST/ST-WIDE"    }
+
+        return countyDict[countyCode]
+
+}
+
+function RefreshCanvas(id,parent)
+{
+  //Create A New Canvas
+  var CanvasToBeDestroyed = document.getElementById(id);
+  CanvasToBeDestroyed.remove();
+  var Container = document.getElementById(parent);
+  var canvas = document.createElement("Canvas");
+  canvas.id = id
+  canvas.className = "Chart"
+  Container.appendChild(canvas)
+}  
+</script>
+</head>
+
+
+<body class = "TrafficBody">
+
+    <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'ToD')">Traffic On date</button>
+        <button class="tablinks" onclick="openTab(event, 'ToT')">Traffic over Time</button>
+      </div>
+      
+
+      <div id="ToD" class="tabcontent">
+
+        <label for="Date">Choose a Date:</label>
+        <!--To be filled-->
+          <select id="Date" onchange="populateSites('Site')">
+          </select><br>
+          <label for="Site">Choose a Site:</label>
+        <!--To be filled by Date-->
+          <select id="Site">
+          </select>
+          <button onclick="generateNewGraph()">Create new Graph</button>
+
+          <div id = "ChartDiv" class = "ChartDiv">
+            <canvas id="ChartMain" class = "Chart"></canvas>
+          </div>
+
+      </div>
+      
+      <div id="ToT" class="tabcontent">
+
+
+        <label for="begDate">Choose a starting Date:</label>
+        <!--To be filled-->
+          <select id="begDate" onchange="populateEndDates()">
+          </select><br>
+          <label for="endDate">Choose an ending Date:</label>
+          <!--To be filled-->
+            <select id="endDate">
+            </select><br>
+          <label for="Site2">Choose a Site:</label>
+        <!--To be filled by Date-->
+          <select id="Site2">
+          </select>
+          <button onclick="generateNewAverageGraph()">Create new Graph</button>
+
+          <div id = "ChartDiv2" class = "ChartDiv">
+            <canvas id="ChartMain2" class = "Chart"></canvas>
+          </div>
+
+      </div>
+      <div id = "alignToBottom">
+        <footer>
+          <p>Data Source: <a href=https://www.fdot.gov/statistics/trafficinfo/default.shtm>FDOT statistics</a></p>
+        </footer>
+      </div>
+
+      
+
+      <script src="../static/javascript/Traffic.js"></script>
+      <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js">
+        </script>
+
+ </body>
