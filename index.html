@@ -21,7 +21,7 @@ async function init() {
 
 async function fetchJSONData() {
     try {
-        const response = await fetch("/TMST-04-2020.json");
+        const response = await fetch("TMST-04-2020.json");
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
@@ -483,5 +483,6 @@ function RefreshCanvas(id,parent)
       <script
         src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js">
         </script>
+
 
  </body>
