@@ -58,7 +58,6 @@ function openTab(evt, tabName) {
 //Generates the Available dates
 function generateDates()
 {
-    console.log(data)
     let dateArray = []
     for (let k in data)
     {
@@ -207,7 +206,6 @@ function generateNewAverageGraph()
 
     for(let i = 0;i<xValuesDynamicLength;i++)
     {
-            console.log(xValues[i])
             let temp = data[xValues[i]][site]
 
             //If sites are malformed
@@ -234,8 +232,6 @@ function generateNewAverageGraph()
 
             j++
     }
-
-    console.log(xValues)
 
     RefreshCanvas("ChartMain2","ChartDiv2")
 
@@ -486,3 +482,4 @@ function RefreshCanvas(id,parent)
 
 
  </body>
+
